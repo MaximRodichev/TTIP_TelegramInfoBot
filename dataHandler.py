@@ -111,7 +111,7 @@ def createTeacher(fname, userId, note):
     with open(pathToBase, 'r') as file:
         data = json.load(file)
 
-        if "Administration" not in data:
+        if "Administration" not in data["Groups"]:
             data["Groups"]["Administration"] = {}
         
 
