@@ -9,7 +9,8 @@ def Main():
         [btn(text = "Расписание"),btn(text = "Замены")],
         [btn(text = "Новости"), btn(text = "Основные контакты")]
     ]
-    main_mark = types.ReplyKeyboardMarkup(keyboard=buttons)
+    main_mark = types.ReplyKeyboardMarkup(keyboard=buttons,
+                                          input_field_placeholder="Лучший техникум слушает")
     return main_mark
 
 def Groups1():
@@ -66,6 +67,14 @@ def Slider():
     ]
     rulesMark = types.InlineKeyboardMarkup(inline_keyboard=buttons)
     return rulesMark
+
+def YesNo():
+    buttons = [
+        [inBtn(text = "Yes", callback_data="Yes"), inBtn(text= "No", callback_data="No")]
+    ]
+    rulesMark = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+    return rulesMark
+
 
 def ZamenasMarks():
     buttons = []

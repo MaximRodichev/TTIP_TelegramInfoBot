@@ -45,7 +45,7 @@ async def start2(callback: types.CallbackQuery, state:FSMContext):
 
 @dp.callback_query(newMember.getGroup)
 async def start3(callback: types.CallbackQuery, state:FSMContext):
-    if dataHandler.createUserData(callback.message.chat.id, callback.from_user.full_name, callback.data) == False:
+    if dataHandler.createUserData(callback.message.chat.id, callback.data,callback.from_user) == False:
         await callback.message.answer("Вы уже выбрали свою группу.")
     else:
         await callback.message.edit_text(text = "Спасибо за авторизацию в нашем боте!")
@@ -167,26 +167,76 @@ async def SliderNews(callback: types.CallbackQuery, state: FSMContext):
 class Zamena(StatesGroup):
     getDate = State()
 
+class addTeacher(StatesGroup):
+    getContact = State()
+    isTeacher = State()
+
 @dp.message(F.text == "Замены")
 async def Zamenas(message: types.Message, state: FSMContext):
     await message.answer(text = "Выберите замену", reply_markup=markups.ZamenasMarks(), parse_mode="Markdown")
     await state.set_state(Zamena.getDate)
+
 @dp.callback_query(Zamena.getDate)
 async def SendZamena(callback: types.CallbackQuery, state: FSMContext):
+    if(callback.data == "Exit"):
+        await callback.message.delete()
+        await state.clear()
+        return
+
     target = callback.data.split("_")[1]
     await callback.message.delete()
     await bot.copy_message(
         chat_id=callback.from_user.id,
         from_chat_id=idData,
         message_id=dataHandler.getMsgId_Zamena(callback.data),
-        caption=f"Расписание на {target}",
+        caption=f"Замена на {target}",
         reply_markup=markups.ZamenasMarks()
     )
     await callback.answer()
-    await state.clear()
-
 # - - -- - - - - - - ADMINS - - -- - - -#
 # - - - - - - - - SEND BROADCAST LOGIC - - - - - - - - #
+@dp.message(F.contact)
+async def getContact(msg: types.Message, state:FSMContext):
+    await state.set_state(addTeacher.getContact)
+    await state.update_data(CONTACT = msg.contact)
+    await msg.answer(f"Вы хотите добавить {msg.contact.phone_number} в бд как препода?", reply_markup=markups.YesNo())
+
+@dp.callback_query(addTeacher.getContact)
+async def addTeacher_(callback: types.CallbackQuery, state: FSMContext):
+    if(callback.data == "No"):
+        await state.clear()
+        await callback.message.delete()
+        return
+    await state.set_state(addTeacher.isTeacher)
+    await callback.message.edit_text(f"Преподаватель?",
+                                     reply_markup=markups.YesNo())
+
+@dp.callback_query(addTeacher.isTeacher)
+async def addTeacher_(callback: types.CallbackQuery, state: FSMContext):
+    contact = await state.get_data()
+    contact = contact["CONTACT"]
+    userId = contact.user_id
+    fullName = contact.first_name + " " + contact.last_name
+    if(callback.data == "No"):
+        dataHandler.createTeacher(fullName, userId, "none")
+        if(dataHandler.checkUser(userId)):
+            await callback.message.answer("Спасибо, успешно добавили как сотрудника")
+        else: await callback.message.answer("Произошла ошибка")
+        await state.clear()
+        return
+    await callback.message.edit_text(f"Пожалуйста введите группу классного руководства", reply_markup=None)
+
+@dp.message()
+async def addTeacher_1(msg: types.Message, state:FSMContext):
+    contact = await state.get_data()
+    contact = contact["CONTACT"]
+    userId = contact.user_id
+    fullName = contact.first_name + " " + contact.last_name
+    dataHandler.createTeacher(fullName, userId, msg.text)
+    if(dataHandler.checkUser(userId)):
+        await msg.answer("Спасибо, успешно добавили")
+    else: await msg.answer("Произошла ошибка")
+    await state.clear()
 
 @dp.message(Command('send')) # all or Group
 async def SendBroadcast(message: types.Message, state:FSMContext):

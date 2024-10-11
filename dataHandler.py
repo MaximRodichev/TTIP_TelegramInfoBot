@@ -1,4 +1,4 @@
-import os
+import aiogram
 import json
 from datetime import datetime
 import asyncio
@@ -64,10 +64,10 @@ def getMsgId_Zamena(datetime):
     datetime = datetime.split("_")[1].split(" ")[0]
     with open(pathToBase, 'r', encoding="utf-8") as file:
         data = json.load(file)
-        for x in data["Zamens"]:
+        for x in data["Zamenas"]:
             if str(x).__contains__(datetime):
                 file.close()
-                return data["Zamens"][x]
+                return data["Zamenas"][x]
     file.close()
 
 def getKurs(id):
@@ -78,7 +78,7 @@ def getKurs(id):
                 return x
         raise KursNotFound_Exeption()
 
-def createUserData(chatId, userName, group):
+def createUserData(chatId, group,  User: aiogram.types.user.User):
     with open(pathToBase, 'r') as file:
         if file.read().__contains__(str(chatId)): file.close(); return False
         # file.close()
@@ -95,13 +95,36 @@ def createUserData(chatId, userName, group):
             data["Groups"][group]["users"][chatId] = {}
 
         data["Groups"][group]["users"][chatId] = {
-                    "userName": userName
+                    "userName": User.full_name,
+                    "@userName": User.username
                 }
         file.close()
     
     with open(pathToBase, 'w') as file:
         json.dump(data, file, indent=4)
         file.close()
+
+def createTeacher(fname, userId, note):
+    with open(pathToBase, 'r') as file:
+        if file.read().__contains__(str(userId)): file.close(); return False
+        # file.close()
+    with open(pathToBase, 'r') as file:
+        data = json.load(file)
+
+        if "Administration" not in data:
+            data["Groups"]["Administration"] = {}
+        
+
+        data["Groups"]["Administration"][userId] = {
+                    "userName": fname,
+                    "note": note
+                }
+        file.close()
+    
+    with open(pathToBase, 'w') as file:
+        json.dump(data, file, indent=4)
+        file.close()
+
 
 def checkUser(chatId):
     with open(pathToBase, 'r') as file:
